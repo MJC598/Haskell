@@ -76,7 +76,9 @@ range i j = if i > j
 -- For example, euclid 6 27 should return the result 3.
 
 euclid :: Int -> Int -> Int
-euclid = undefined
+euclid i i = i
+euclid i j = if i > j
+             then 
 
 -- Problem 3. Add type declarations for the following functions. Obviously, one thing
 -- you can do is just load this file into GHCi and use ":t" to determine their types.
