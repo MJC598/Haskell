@@ -64,10 +64,11 @@ map f = foldr (\ a bs -> f a : bs) []
 --    *** Exception: Invalid Input
 
 range :: Int -> Int -> [Int]
-range i i = [i]
 range i j = if i > j
             then error "empty"
-            else i : range (i+1) j 
+            else if i == j 
+                 then [i]
+                 else i : range (i+1) j 
 
 -- Problem 2. Define a recursive function euclid :: Int -> Int -> Int that implements
 -- Euclid’s algorithm for calculating the greatest common divisor of two non-negative 
@@ -76,30 +77,36 @@ range i j = if i > j
 -- For example, euclid 6 27 should return the result 3.
 
 euclid :: Int -> Int -> Int
-euclid i i = i
 euclid i j = if i > j
-             then 
+             then euclid (i-j) j
+             else if i == j
+                  then i
+                  else euclid i (j-i)
 
 -- Problem 3. Add type declarations for the following functions. Obviously, one thing
 -- you can do is just load this file into GHCi and use ":t" to determine their types.
 -- So, there's no reason to lose any points on this problem. BUT, try to figure out their
 -- types by looking at the code first. Can you make sense of why they have the types 
 -- they do?
-
+h1 :: (Int, Int) -> Int
 h1 = (\ (x,y) -> x + y)
 
+h2 :: (b,a) -> (a,b)
 h2 = (\ (x,y) -> (y,x)) 
 
+f1 :: [(Integer, Integer)] -> [Integer]
 f1 = map (\ (x,y) -> x + y) . map (\ (x,y) -> (y,x)) 
 
+f2 :: [(a, (b,c))] -> [b]
 f2 = map fst . map snd
 
+f3 :: [((a,b), c)] -> [b]
 f3 = map snd . map fst
 
 -- Problem 4. Add a type declaration for the following function. This is just like the
 -- previous question, but it's a little more challenging. Try to figure out its type
 -- without using ":t" and then check your answer with ":t".
-
+fuse :: (a -> b) -> (c -> a) -> ([c] -> [b], [c] -> [b])
 fuse f g = (map f . map g, map (f . g))
 
 -- Problem 5. There's a program optimization used in the GHC compiler called "map fusion"
@@ -110,11 +117,14 @@ fuse f g = (map f . map g, map (f . g))
 -- f1, f2, and f3 below with their "fused" versions. Remember to add type declarations
 -- and, of course, the types of fusedf1 and f1, etc., should be identical.
 
-fusedf1 = undefined
+fusedf1 :: [(Int, Int)] -> [Int]
+fusedf1 = map ((\ (x,y) -> x + y) . (\ (x,y) -> (y,x)))
 
-fusedf2 = undefined
+fusedf2 :: [(a, (b,c))] -> [b]
+fusedf2 = map (fst . snd)
 
-fusedf3 = undefined
+fusedf3 :: [((a,b), c)] -> [b]
+fusedf3 = map (snd . fst)
 
 -- Problem 6. The switcheroo function takes a single argument, which
 -- is itself a function of two arguments, and returns a function with the arguments
@@ -133,7 +143,7 @@ fusedf3 = undefined
 -- credit, your answer *must* be a lambda expression.
 
 switcheroo :: (a -> b -> c) -> (b -> a -> c)
-switcheroo f = error "replace this with a lambda expression"
+switcheroo f = (\x y -> f y x)  
 
 --
 -- Problem 7. Here's (almost) a definition of append:
