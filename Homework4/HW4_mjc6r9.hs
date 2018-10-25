@@ -15,8 +15,14 @@ rpnParse st = map(tester s) (words(st))
           tester s   = Val read s
 
 eval :: PExp -> Int
-eval []    = error "Bad Input"
-eval p:ps  = if  
+eval []  = error "Bad Input"
+eval ps  = head . foldl folding []
+        where folding    :: PExp -> Op -> PExp 
+              folding (x:y:ps) Plus   = (x + y):ys 
+              folding (x:y:ps) Minus  = (x - y):ys
+              folding (x:y:ps) Mul    = (x ** y):ys
+              folding (x:y:ps) IntDiv = (x / y):ys
+              folding ps Val Int      = p:ps 
 
 evalSafe :: PExp -> RPNResult
 evalSafe = undefined
