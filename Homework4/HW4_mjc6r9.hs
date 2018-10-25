@@ -18,12 +18,12 @@ rpnParse st = map(tester s) (words(st))
 --evaluate the function after parsing
 eval :: PExp -> Int
 eval []  = error "Bad Input"
-eval ps  = head . foldl folding []
+eval ps  = head . foldl folding [] ps
         where folding :: PExp -> Op -> PExp 
-              folding (x:y:ps) Plus   = (x + y):ys 
-              folding (x:y:ps) Minus  = (x - y):ys
-              folding (x:y:ps) Mul    = (x ** y):ys
-              folding (x:y:ps) IntDiv = (x / y):ys
+              folding (x:y:ps) Plus   = (x + y):ps
+              folding (x:y:ps) Minus  = (x - y):ps
+              folding (x:y:ps) Mul    = (x ** y):ps
+              folding (x:y:ps) IntDiv = (x / y):ps
               folding ps Val Int      = p:ps 
 
 --new data sets and types
@@ -34,6 +34,15 @@ type RPNResult  = Either RPNError Int
 --the safe evaulation function
 evalSafe :: PExp -> RPNResult
 evalSafe [] = InvalidInput
+evalSafe ps = head . foldl folding [] ps
+            where folding :: PExp -> Op -> PExp
+                  folding (x:y:ps) Plus   = (x + y):ps
+                  folding (x:y:ps) Minus  = (x - y):ps
+                  folding (x:y:ps) Mul    = (x ** y):ps
+                  folding (x:y:ps) IntDiv = if y == 0
+                                            then DivByZero
+                                            else (x / y):ps
+                  folding ps Val Int      = p:ps
 
 --translation into infix
 rpnTrans :: PExp -> String
