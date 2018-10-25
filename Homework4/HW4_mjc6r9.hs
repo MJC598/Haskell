@@ -22,13 +22,12 @@ eval ps  = head . foldl folding [] ps
         where folding :: PExp -> Op -> PExp 
               folding (x:y:ps) Plus   = (x + y):ps
               folding (x:y:ps) Minus  = (x - y):ps
-              folding (x:y:ps) Mul    = (x ** y):ps
+              folding (x:y:ps) Mul    = (x * y):ps
               folding (x:y:ps) IntDiv = (x / y):ps
               folding ps Val Int      = p:ps 
 
 --new data sets and types
 data RPNError   = DivByZero | InvalidInput deriving (Show, Eq)
-data Either a b = Left a | Right b deriving (Show, Eq)
 type RPNResult  = Either RPNError Int
 
 --the safe evaulation function
@@ -38,12 +37,17 @@ evalSafe ps = head . foldl folding [] ps
             where folding :: PExp -> Op -> PExp
                   folding (x:y:ps) Plus   = (x + y):ps
                   folding (x:y:ps) Minus  = (x - y):ps
-                  folding (x:y:ps) Mul    = (x ** y):ps
+                  folding (x:y:ps) Mul    = (x * y):ps
                   folding (x:y:ps) IntDiv = if y == 0
                                             then DivByZero
                                             else (x / y):ps
                   folding ps Val Int      = p:ps
 
 --translation into infix
-rpnTrans :: PExp -> String
-rpnTrans = undefined
+rpnTrans :: PExp -> Either String String
+rpnTrans [] = InvalidInput
+rpnTrans ps = head . foldl folding [] ps
+            where folding :: PExp -> Op -> String
+                  folding (x:y:ps) Plus  = (x ++ "+" ++ y):ps
+                  folding (x:y:ps) Minus = (x ++ "-" ++ y):ps
+                   
