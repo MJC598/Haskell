@@ -26,14 +26,16 @@ tester (p:ps)   = (Val (read p)):(tester ps)
 --evaluate the function after parsing
 eval :: PExp -> Int
 eval []  = error "Bad Input"
+--me trying to use a foldl
 eval xs = intConverter(head(foldl foldingFunction [] xs))
 
 foldingFunction :: PExp -> Op -> PExp
-foldingFunction (x:y:ys) Plus   = (Val(intConverter(x) + intConverter(y))):ys
-foldingFunction (x:y:ys) Minus  = (Val(intConverter(y) - intConverter(x))):ys
-foldingFunction (x:y:ys) Mul    = (Val(intConverter(x) * intConverter(y))):ys
-foldingFunction (x:y:ys) IntDiv = (Val(intConverter(y) `quot` intConverter(x))):ys
-foldingFunction xs numberString = numberString:xs
+foldingFunction (x:y:ys) Plus       = (Val(intConverter(x) + intConverter(y))):ys
+foldingFunction (x:y:ys) Minus      = (Val(intConverter(y) - intConverter(x))):ys
+foldingFunction (x:y:ys) Mul        = (Val(intConverter(x) * intConverter(y))):ys
+foldingFunction (Val 0:y:ys) IntDiv = error "DivByZero"
+foldingFunction (x:y:ys) IntDiv     = (Val(intConverter(y) `quot` intConverter(x))):ys
+foldingFunction xs numberString     = numberString:xs
 
 --helper function for conversion purposes
 intConverter :: Op -> Int
@@ -48,19 +50,23 @@ type RPNResult  = Either RPNError Int
 evalSafe :: PExp -> RPNResult
 evalSafe [] = Left InvalidInput
 evalSafe xs = foldFunction xs []
---why can't we just build a handler to catch the error?
 
 foldFunction :: PExp -> [Int] -> RPNResult
 foldFunction [] (x:[])            = Right x
+--standard operations
 foldFunction ((Val x):ys) (xs)    = foldFunction (ys) (x:xs)
+--this is the general format: 
+-- function   PExp       [Int]    = recursion (continued PExp) [(op on values applied to Int):remaining vals]
 foldFunction (Plus:ys) (x:y:xs)   = foldFunction (ys)((x + y):xs)
 foldFunction (Minus:ys) (x:y:xs)  = foldFunction (ys)((y - x):xs)
 foldFunction (Mul:ys) (x:y:xs)    = foldFunction (ys)((x * y):xs) 
+--divide by zero error checking
 foldFunction (IntDiv:ys) (0:y:xs) = Left DivByZero
 foldFunction (IntDiv:ys) (x:y:xs) = foldFunction (ys)((y `quot` x):xs)
+--basic catch all
 foldFunction _ _                  = Left InvalidInput
 
---PROBLEM 4
+--PROBLEM 4 (literally problem 3 with strings instead of ints)
 
 --translation into infix
 rpnTrans :: PExp -> Either (String) (RPNError)
