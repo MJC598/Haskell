@@ -47,14 +47,18 @@ type RPNResult  = Either RPNError Int
 
 evalSafe :: PExp -> RPNResult
 evalSafe [] = Left InvalidInput
-evalSafe xs = Right (intConverter(head(foldl foldFunction [] xs)))
+evalSafe xs = foldFunction xs []
+--why can't we just build a handler to catch the error?
 
-foldFunction :: PExp -> Op -> PExp
-foldFunction (x:y:ys) Plus   = (Val(intConverter(x) + intConverter(y))):ys
-foldFunction (x:y:ys) Minus  = (Val(intConverter(y) - intConverter(x))):ys
-foldFunction (x:y:ys) Mul    = (Val(intConverter(x) * intConverter(y))):ys 
-foldFunction (x:y:ys) IntDiv = (Val(intConverter(y) `quot` intConverter(x))):ys
-foldFunction xs numberString = numberString:xs
+foldFunction :: PExp -> [Int] -> RPNResult
+foldFunction [] (x:[])            = Right x
+foldFunction ((Val x):ys) (xs)    = foldFunction (ys) (x:xs)
+foldFunction (Plus:ys) (x:y:xs)   = foldFunction (ys)((x + y):xs)
+foldFunction (Minus:ys) (x:y:xs)  = foldFunction (ys)((y - x):xs)
+foldFunction (Mul:ys) (x:y:xs)    = foldFunction (ys)((x * y):xs) 
+foldFunction (IntDiv:ys) (0:y:xs) = Left DivByZero
+foldFunction (IntDiv:ys) (x:y:xs) = foldFunction (ys)((y `quot` x):xs)
+foldFunction _ _                  = Left InvalidInput
 
 --PROBLEM 4
 
