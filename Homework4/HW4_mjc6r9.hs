@@ -62,10 +62,12 @@ rpnTrans :: PExp -> Either (String) (RPNError)
 rpnTrans xs          = infixConvert xs []
 
 infixConvert :: PExp -> [String] -> Either (String) (RPNError)
+--condition if it works correctly
+infixConvert [] (x:[])                   = Left x
 infixConvert ((Val x):remain) (xs)       = infixConvert remain ((show x):xs)
 infixConvert (Plus:remain) (x:y:xs)      = infixConvert remain (("(" ++ y ++ "+" ++ x ++ ")"):xs)
 infixConvert (Minus:remain) (x:y:xs)     = infixConvert remain (("(" ++ y ++ "-" ++ x ++ ")"):xs)
 infixConvert (Mul:remain) (x:y:xs)       = infixConvert remain (("(" ++ y ++ "*" ++ x ++ ")"):xs)
-infixConvert (IntDiv: remain) ("0":y:xs) = DivByZero
+infixConvert (IntDiv: remain) ("0":y:xs) = Right DivByZero
 infixConvert (IntDiv: remain) (x:y:xs)   = infixConvert remain (("(" ++ y ++ "/" ++ x ++ ")"):xs)
-infixConvert _ _                         = InvalidInput
+infixConvert _ _                         = Right InvalidInput
