@@ -52,10 +52,11 @@ parseTuple :: Parser Ty
 parseTuple = do
   symbol "("
   t1 <- parseTy
-  symbol ","
-  t2 <- many1 parseTy
+  t2 <- many1 (do symbol ","
+                  parseTy)
   symbol ")"
   return (Tuple (t1:t2))
+ 
 
 -- These should succeed.
 ex1 = parse parseTy "(Number,Number,Boolean)"
