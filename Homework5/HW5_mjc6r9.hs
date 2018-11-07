@@ -48,14 +48,14 @@ import Parsing
 -- slides carefully. To complete this problem, you will also have to extend the definition of
 -- parseTy to use parseTuple.
 
-parseTuple :: Parser Ty
+parseTuple :: Parser Ty 
 parseTuple = do
   symbol "("
   t1 <- parseTy
   symbol ","
-  t2 <- parseTy
+  t2 <- many1 parseTy
   symbol ")"
-  return (Tuple t1 t2)
+  return (Tuple (t1:t2))
 
 -- These should succeed.
 ex1 = parse parseTy "(Number,Number,Boolean)"
@@ -66,7 +66,7 @@ ex3 = parse parseTy "(((Number,Boolean) -> Number) -> (Number -> (Boolean -> Num
 fail1 = parse parseTy "()"
 fail2 = parse parseTy "(Number)"
 
-data Ty = Number | Boolean | Tuple Ty Ty | Arrow Ty Ty deriving Show
+data Ty = Number | Boolean | Tuple [Ty] | Arrow Ty Ty deriving Show
 
 parseNumber, parseBoolean, parseArrow, parseTy :: Parser Ty
 
@@ -86,4 +86,4 @@ parseArrow = do
   symbol ")"
   return (Arrow t1 t2)
 
-parseTy = parseBoolean +++ parseNumber +++ parseTuple +++ parseArrow
+parseTy = parseBoolean +++ parseNumber +++ parseArrow +++ parseTuple
