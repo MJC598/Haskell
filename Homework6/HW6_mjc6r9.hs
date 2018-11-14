@@ -50,22 +50,24 @@ Problem 1. Define instances of the Show class for Stat, AExp and BExp
 -}
 
 instance Show BExp where
-  show (BUnOp op b1)    = show (op) show (b1)
-  show (BoolLit True)   = show (True)
-  show (BoolLit False)  = show (False)
-  show (RelOp op e1 e2) = show (op) show (e1) show (e1)
+  show (BUnOp op b1)    = show op +++ Show b1
+  show (BoolLit True)   = show True
+  show (BoolLit False)  = show False
+  show (RelOp op e1 e2) = show op +++ Show e1 +++ Show e2
 
 instance Show Stat where
-  show (Assign x e _) = show (x) show (e)
+  show (Assign x e _) = show x +++ Show e
   show (Skip _)       = None
-  show (Seq sts)      = show (sts)
-  show (While b _ s)  = show (b) show (s)
-  show (NewInt x s)   = show (x) show (s)
+  show (Seq [])       = None
+  show (Seq sts)      = (Show $ head sts) +++ Show (Seq (tail sts)) 
+  show (While b _ s)  = Show b +++ Show s
+  show (NewInt x s)   = show x +++ Show s
+  show (If b _ s1 s2) = Show b +++ Show s1 +++ Show s2 
 
 instance Show AExp where
-  show (Var x)        = show (x)
-  show (IntLit e)     = show (e)
-  show (AOp op e1 e2) = show (op) show (e1) show (e2)
+  show (Var x)        = show x
+  show (IntLit e)     = show e
+  show (AOp op e1 e2) = show op +++ Show e1 +++ Show e2
 
 {-
 Problem 1 (continued). Test your answer with the function defined below.
@@ -139,8 +141,12 @@ exec (While b l c) m  = if evB b m
 -- x is initialized to 0 (but is otherwise identical to m).
 --
 -- Define NewInt below.
---
-exec (NewInt x c) m   = error "NewInt exec undefined"
+
+
+-- here is the definition for Stat for personal usage
+-- type Ident = String
+-- data Stat = NewInt Ident Stat
+exec (NewInt x c) m =  exec c (x,0):m
 
 {- Problem 3.
 A static check commonly used in language implementations determines if all variables used 
@@ -185,26 +191,27 @@ solution with check below. In particular, (check "newfib.wh") should be True and
 
 checkS :: Stat -> [Ident] -> Bool
 checkS c r = case c of 
-                 (Skip _)       -> undefined
-                 (Assign x e _) -> undefined
-                 (Seq cs)       -> undefined
-                 (If b _ s1 s2) -> undefined
-                 (While b _ c)  -> undefined
-                 (NewInt i c)   -> undefined
+                 (Skip _)       -> True
+                 (Assign x e _) -> if x `elem` r && checkE e r then True else False 
+                 (Seq [])       -> True
+                 (Seq cs)       -> if head(cs) `elem` r && checkS $ tail(cs) r then True else False
+                 (If b _ s1 s2) -> if checkB b r && s1 `elem` r && s2 `elem` r then True else False
+                 (While b _ c)  -> if checkB b r && c `elem` r then True else False
+                 (NewInt i c)   -> checkS $ c i:r
 
 checkE :: AExp -> [Ident] -> Bool
 checkE e r = case e of 
-                  (Var x)        -> undefined
-                  (IntLit i)     -> undefined
-                  (AOp op e1 e2) -> undefined
+                  (Var x)        -> if x `elem` r then True else False
+                  (IntLit i)     -> True
+                  (AOp op e1 e2) -> (checkE e1 r) checkE e2 r
                   
 checkB :: BExp -> [Ident] -> Bool
 checkB b r = case b of
-                  (BUnOp "not" b)    -> undefined
-                  (BoolLit b)        -> undefined
-                  (BOp "&" b1 b2)    -> undefined
-                  (RelOp ">" e1 e2)  -> undefined
-                  (RelOp "<=" e1 e2) -> undefined
+                  (BUnOp "not" b)    -> checkB b r
+                  (BoolLit b)        -> True
+                  (BOp "&" b1 b2)    -> (checkB b1 r) checkB b2 r
+                  (RelOp ">" e1 e2)  -> (checkE e1 r) checkE e2 r
+                  (RelOp "<=" e1 e2) -> (checkE e1 r) checkE e2 r
 
 check fname
   = do{ input <- readFile fname
@@ -221,3 +228,15 @@ variables, runs the exec interpreter on it. Finally, the loop should start again
 solution will look something like the check function above. Consult the lecture slides
 for more information about read-eval-print loops.
 -}
+
+repl fname = do{  input <- readFile fname
+                ; putStr input
+                ; case parse program fname input of
+                    Left err -> error (show err)
+                    ":quit"  -> return ()
+                    Right x  -> do{ case checkS x [] of 
+                                      True  -> putStrLn (show (exec x []))
+                                      False -> error "Did not pass checkS!"
+                                    repl fname
+                                  }
+                }
