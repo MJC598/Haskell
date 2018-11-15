@@ -1,0 +1,17 @@
+newint v in (
+newint u in (
+       v := 1; 
+       u := 1; 
+   newint n in (
+     newint t in (
+       if n <= 2 then 
+         skip 
+       else 
+         while n > 2 do (
+	     t := u; 
+	     u := v; 
+	     v := u + t
+         )
+   ))
+))
+    

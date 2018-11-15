@@ -50,24 +50,22 @@ Problem 1. Define instances of the Show class for Stat, AExp and BExp
 -}
 
 instance Show BExp where
-  show (BUnOp op b1)    = show op ++ show b1
-  show (BoolLit True)   = show True
-  show (BoolLit False)  = show False
-  show (RelOp op e1 e2) = show op ++ show e1 ++ show e2
+  show (BUnOp op b1)    = undefined
+  show (BoolLit True)   = undefined
+  show (BoolLit False)  = undefined
+  show (RelOp op e1 e2) = undefined
 
 instance Show Stat where
-  show (Assign x e _) = show x ++ show e
-  show (Skip _)       = ""
-  show (Seq [])       = ""
-  show (Seq sts)      = (show $ head sts) ++ show (Seq (tail sts)) 
-  show (While b _ s)  = show b ++ show s
-  show (NewInt x s)   = show x ++ show s
-  show (If b _ s1 s2) = show b ++ show s1 ++ show s2 
+  show (Assign x e _) = undefined
+  show (Skip _)       = undefined
+  show (Seq sts)      = undefined
+  show (While b _ s)  = undefined
+  show (NewInt x s)   = undefined
 
 instance Show AExp where
-  show (Var x)        = show x
-  show (IntLit e)     = show e
-  show (AOp op e1 e2) = show op ++ show e1 ++ show e2
+  show (Var x)        = undefined
+  show (IntLit e)     = undefined
+  show (AOp op e1 e2) = undefined
 
 {-
 Problem 1 (continued). Test your answer with the function defined below.
@@ -122,8 +120,7 @@ exec (Assign i e _) m = (i,evE e m) : m
 -- Redefine this clause for the general case in which there are arbitrary numbers of 
 -- statements.
 --
-exec (Seq []) m    = []
-exec (Seq xs) m  = exec (head xs) (exec (Seq (tail xs)) m)
+exec (Seq [c1,c2]) m  = exec c2 (exec c1 m)
 exec (If b _ s1 s2) m = if evB b m
                            then
                               exec s1 m
@@ -141,12 +138,8 @@ exec (While b l c) m  = if evB b m
 -- x is initialized to 0 (but is otherwise identical to m).
 --
 -- Define NewInt below.
-
-
--- here is the definition for Stat for personal usage
--- type Ident = String
--- data Stat = NewInt Ident Stat
-exec (NewInt x c) m =  exec c ((x,0):m)
+--
+exec (NewInt x c) m   = error "NewInt exec undefined"
 
 {- Problem 3.
 A static check commonly used in language implementations determines if all variables used 
@@ -175,9 +168,9 @@ in the program are declared by a NewInt first. For an example, look at fib.wh an
              skip 
            else 
              while n > 2 do (
-               t := u; 
-               u := v; 
-               v := u + t
+    	       t := u; 
+    	       u := v; 
+    	       v := u + t
          )
    ))
 ))
@@ -191,27 +184,26 @@ solution with check below. In particular, (check "newfib.wh") should be True and
 
 checkS :: Stat -> [Ident] -> Bool
 checkS c r = case c of 
-                 (Skip _)       -> True
-                 (Assign x e _) -> if x `elem` r && checkE e r then True else False 
-                 (Seq [])       -> True
-                 (Seq cs)       -> if (checkS (head cs) r) && (checkS (Seq (tail cs)) r) then True else False
-                 (If b _ s1 s2) -> if (checkB b r) && (checkS s1 r) && (checkS s2 r) then True else False
-                 (While b _ c)  -> if (checkB b r) && (checkS c r) then True else False
-                 (NewInt i c)   -> checkS c (i:r)
+                 (Skip _)       -> undefined
+                 (Assign x e _) -> undefined
+                 (Seq cs)       -> undefined
+                 (If b _ s1 s2) -> undefined
+                 (While b _ c)  -> undefined
+                 (NewInt i c)   -> undefined
 
 checkE :: AExp -> [Ident] -> Bool
 checkE e r = case e of 
-                  (Var x)        -> if x `elem` r then True else False
-                  (IntLit i)     -> True
-                  (AOp op e1 e2) -> (checkE e1 r) && (checkE e2 r)
+                  (Var x)        -> undefined
+                  (IntLit i)     -> undefined
+                  (AOp op e1 e2) -> undefined
                   
 checkB :: BExp -> [Ident] -> Bool
 checkB b r = case b of
-                  (BUnOp "not" b)    -> checkB b r
-                  (BoolLit b)        -> True
-                  (BOp "&" b1 b2)    -> (checkB b1 r) && (checkB b2 r)
-                  (RelOp ">" e1 e2)  -> (checkE e1 r) && (checkE e2 r)
-                  (RelOp "<=" e1 e2) -> (checkE e1 r) && (checkE e2 r)
+                  (BUnOp "not" b)    -> undefined
+                  (BoolLit b)        -> undefined
+                  (BOp "&" b1 b2)    -> undefined
+                  (RelOp ">" e1 e2)  -> undefined
+                  (RelOp "<=" e1 e2) -> undefined
 
 check fname
   = do{ input <- readFile fname
@@ -228,15 +220,3 @@ variables, runs the exec interpreter on it. Finally, the loop should start again
 solution will look something like the check function above. Consult the lecture slides
 for more information about read-eval-print loops.
 -}
-
-repl =  do{ putStr "\nEnter File: "
-          ; fname <- getLine
-          ; input <- readFile fname
-          ; putStr input
-          ; case parse program fname input of
-              Left err -> error (show err)
-              Right x  -> do{ case checkS x [] of 
-                                True  -> putStrLn (show (exec x [])) >> repl
-                                False -> error "Did not pass checkS!"
-                            }
-                }
