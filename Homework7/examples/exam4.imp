@@ -1,0 +1,14 @@
+
+
+function fac(n) {
+  r := 1;
+  i := n;
+  while i > 0 {
+    r := r * i;
+    i := i - 1;
+  }
+  return r;
+}
+
+y := fac(5);
+

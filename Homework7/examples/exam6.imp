@@ -1,0 +1,12 @@
+function f (x, u)
+{
+u:= u+3;
+x:= x+1;
+return 2; }
+
+
+y:=0;
+z:= f (y,y);
+
+
+
