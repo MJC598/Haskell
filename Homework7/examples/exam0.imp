@@ -1,6 +1,0 @@
-function double(n) {
-  return n+n;
-}
-
-y := double(5);
-
