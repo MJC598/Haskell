@@ -48,7 +48,7 @@ import ParserHW7
 -- Problem 1. Write a Haskell function that calculates all of the variables that occur free in its
 --            argument.
 freeProg :: Prog -> [String]
-freeProg (fds,stmts) = freeStmts (map freeFD fds) stmts
+freeProg (fds,stmts) = freeStmts (concat(map freeFD fds)) stmts
 
 freeExp :: [Name] -> Exp -> [Name]
 freeExp seen e = case e of
@@ -110,27 +110,45 @@ freeStmts seen (s:sts) = freeStmt seen s ++ freeStmts seen sts
 --            in a given program are unique. E.g., you should not be able to define the
 --            same function twice.
 uniqueFuns :: Prog -> Bool
-uniqueFuns (fd:fds,stmts) = if lkupFn fd fds then True else False
+uniqueFuns (fds,stmts) = uniqueFns fds []
+    where
+        uniqueFns [] _         = False 
+        uniqueFns (x:xs) visit = if lkupNm x visit then False else True
 
+lkupNm :: FunDefn -> [FunDefn] -> Bool
+lkupNm x []                              = False
+lkupNm (n,ns,stmts) ((yn,yns,ystmts):ys) = n==yn || lkupNm (n,ns,stmts) ys
 
-lkupFn :: FunDefn -> [FunDefn] -> Bool
-lkupFn _ [] = True
-lkupFn x (fd:fds) = fst(x) == fst(fd) || lkupFn x fds
 -- Problem 3. Write a Haskell function that checks that each function in the program ends with
 --            a "Return". That is, literally the last statement in the body of a function must
 --            be a Return.
+--            ([FunDefn],[Stmt])
 returning :: Prog -> Bool
-returning (fds,stmts) = if last(stmts) == Return _ then True else False
+returning (fds,stmts) = and (map returns fds)
+
+returns :: FunDefn -> Bool
+returns (n,ns,stmts) = case (last stmts) of
+    Assign n e           -> False
+    If b stmts1 stmts2   -> False
+    While b stmts        -> False
+    Let n e stmts        -> False
+    Switch e [(i,stmts)] -> False
+    For n e1 e2 stmts    -> False
+    Return e             -> True
+
 
 -- Problem 4. Write a Haskell function that checks that formal parameters of a function definition
 --            are unique. E.g., "function f(i,j) ..." has unique names but "function f(i,i) ..."
 --            does not.
 uniqueparams :: Prog -> Bool
-uniqueparams (fd:fds,stmts) = if lkupPr fd fds then True else False
+uniqueparams (fds,stmts) = and (map params fds)
 
-lkupPr :: FunDefn -> [FunDefn] -> Bool
-lkupPr _ [] = True
-lkupPr x (fd:fds) = snd(x) == snd(fd) || lkupPr x fds
+params :: FunDefn -> Bool
+params (n,ns,stmts) = execute ns []
+    where 
+        execute [] _           = False
+        execute (x:xs) visited = if lkup x visited then False else True
+
 
 -- Problem 5. Write a Haskell function that performs "constant folding". Constant folding means
 --            any Exp that does _not_ include a Var or a FunCall is replaced by its value.
@@ -149,8 +167,46 @@ lkupPr x (fd:fds) = snd(x) == snd(fd) || lkupPr x fds
 -- Note that "(n+2)+3" is not replaced by "n+5" with constant folding. Had the program
 -- had "return n+(2+3);" instead, it would have been replaced by "n+5".
 cfold :: Prog -> Prog
-cfold (fds,stmts) = undefined
+cfold (fds,stmts) = (fds,(map cfoldStmt stmts))
 
+cfoldStmt :: Stmt -> Stmt
+cfoldStmt stmt = case stmt of
+    Assign n e           -> Assign n (cfoldExp e)
+    If b stmts1 stmts2   -> If b (map cfoldStmt stmts1) (map cfoldStmt stmts2)
+    While b stmts        -> While b (map cfoldStmt stmts)   
+    Let n e stmts        -> Let n (cfoldExp e) (map cfoldStmt stmts)
+    Switch e [(i,stmts)] -> Switch (cfoldExp e) [(i,(map cfoldStmt stmts))]
+    For n e1 e2 stmts    -> For n (cfoldExp e1) (cfoldExp e2) (map cfoldStmt stmts)
+    Return e             -> Return (cfoldExp e)
+
+cfoldExp :: Exp -> Exp
+cfoldExp e = case e of
+    Add (LitInt i1) (LitInt i2) -> LitInt (i1+i2)
+    Add e1 e2                   -> Add e1 e2 
+    Sub (LitInt i1) (LitInt i2) -> LitInt (i1-i2)
+    Sub e1 e2                   -> Sub e1 e2
+    Mul (LitInt i1) (LitInt i2) -> LitInt (i1*i2)
+    Mul e1 e2                   -> Mul e1 e2
+    Neg e                       -> Neg (cfoldExp e)
+    LitInt i                    -> LitInt i
+    Var x                       -> Var x
+    FunCall f es                -> FunCall f (map cfoldExp es)
+
+
+-- cfoldBExp :: BExp -> BExp
+-- cfoldBExp b = case b of
+--     IsEq e1 e2  -> IsEq (cfoldExp e1) (cfoldExp e2)
+--     IsNEq e1 e2 -> IsNEq (cfoldExp e1) (cfoldExp e2)
+--     IsGT e1 e2  -> IsGT (cfoldExp e1) (cfoldExp e2)
+--     IsLT e1 e2  -> IsLT (cfoldExp e1) (cfoldExp e2)
+--     IsGTE e1 e2 -> IsGTE (cfoldExp e1) (cfoldExp e2)
+--     IsLTE e1 e2 -> IsLTE (cfoldExp e1) (cfoldExp e2)
+--     And b1 b2   -> And (cfoldBExp b1) (cfoldBExp b2)
+--     Or b1 b2    -> Or (cfoldBExp b1) (cfoldBExp b2)
+--     Not b       -> Not LitBool b || Not (cfoldBExp b)
+--     LitBool b   -> LitBool b
+
+ 
 -- Hint: try writing a helper function, cfoldExp :: Exp -> Exp, that performs constant folding
 -- on its input. Make sure that this function works correctly for "(n+2)+3" and "n+(2+3)".
 
@@ -161,5 +217,17 @@ cfold (fds,stmts) = undefined
 --            4. If the program passes 1.-3., perform constant folding and return the result.
 
 staticcheck :: Prog -> Maybe Prog
-staticcheck (fds,stmts) = undefined
+staticcheck (fds,stmts) = if ((length (freeProg (fds,stmts)) /= 0) && uniqueFuns (fds,stmts) && uniqueparams (fds,stmts) && returning (fds,stmts))
+                            then Just (cfold(fds,stmts))
+                            else Nothing
 
+--basically, I need a way to run this
+examples :: [String]
+examples = ["examples/exam" ++ (show x) ++ ".imp" | x <- [0..9]]
+
+asts :: IO [Prog]
+asts = sequence $ map parseImp examples
+
+checkp :: (Prog -> a) -> IO [a]
+checkp f = do a <- asts; 
+              return $ map f a
